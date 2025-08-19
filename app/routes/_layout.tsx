@@ -6,22 +6,42 @@ import {
   Container,
   Anchor,
   Burger,
+  Tooltip,
+  Avatar,
+  Box,
 } from "@mantine/core";
 import { useDisclosure } from "@mantine/hooks";
 import { Link, Outlet, Form } from "react-router";
 import { getUserToken } from "../lib/session.server";
+import { getUserDetails } from "~/lib/directus.server";
 
 export async function loader({ request }: { request: Request }) {
   const token = await getUserToken(request);
-  return { isAuthenticated: Boolean(token) };
+
+  if (!token) {
+    return { isAuthenticated: false, user: null };
+  } else {
+    const user = await getUserDetails(token);
+    return {
+      isAuthenticated: true,
+      user: {
+        email: user.email,
+        firstName: user.first_name,
+        lastName: user.last_name,
+      },
+    };
+  }
 }
 
 export default function Layout({
   loaderData,
 }: {
-  loaderData: { isAuthenticated: boolean };
+  loaderData: { isAuthenticated: boolean; user: any };
 }) {
   const [opened, { toggle }] = useDisclosure();
+  const userInitials =
+    loaderData.user?.firstName?.[0]?.toUpperCase() +
+      loaderData.user?.lastName?.[0]?.toUpperCase() || "";
 
   return (
     <AppShell
@@ -41,6 +61,7 @@ export default function Layout({
             <Text fw={700} size="lg">
               Blog Pulse
             </Text>
+
             <Burger
               opened={opened}
               onClick={toggle}
@@ -49,6 +70,17 @@ export default function Layout({
             />
 
             <Group gap="xl" visibleFrom="sm">
+              {loaderData.user ? (
+                <Tooltip
+                  label={`${loaderData.user.firstName} ${loaderData.user.lastName} [
+                  ${loaderData.user.email}]`}
+                  withArrow
+                >
+                  <Avatar radius="xl" color="teal">
+                    {userInitials}
+                  </Avatar>
+                </Tooltip>
+              ) : null}
               <Anchor component={Link} to="/">
                 Home
               </Anchor>
@@ -81,6 +113,14 @@ export default function Layout({
 
       <AppShell.Navbar hiddenFrom="sm" p="xl">
         <Stack gap="lg">
+          {loaderData.user ? (
+            <Box bg="gray"  p="4px 12px" style={{borderRadius:"4px", width:"fit-content"}}>
+              <Text c="teal" >
+                {loaderData.user.firstName} {loaderData.user.lastName} [
+                {loaderData.user.email}]
+              </Text>
+            </Box>
+          ) : null}
           <Anchor component={Link} to="/">
             Home
           </Anchor>
