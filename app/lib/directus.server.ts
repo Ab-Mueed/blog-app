@@ -9,21 +9,30 @@ import {
   updateItem,
   logout,
   readMe,
+  refresh,
 } from "@directus/sdk";
 
+import { getSession, commitSession, destroySession } from "./session.server";
+
+// Directus client for Protected Endpoints
 const directus = createDirectus("https://directus-blog-e17s.onrender.com")
   .with(rest())
   .with(authentication("json"));
 
+// Directus client for Public Endpoints
+const publicDirectus = createDirectus(
+  "https://directus-blog-e17s.onrender.com"
+).with(rest());
+
 // Get All Posts, works for both Unauthenticated user and authenticated user.
 export async function getAllPosts() {
-  return await directus.request(readItems("posts"));
+  return await publicDirectus.request(readItems("posts"));
 }
 
 // Get Post by id (Helps to view post on a full page dedicated to that post)
 export async function getPostbyId(id: string) {
   console.log("id: ", id);
-  return await directus.request(readItem("posts", id));
+  return await publicDirectus.request(readItem("posts", id));
 }
 
 // Create Post
@@ -107,7 +116,7 @@ export async function userRegister(
   firstName: string,
   lastName: string
 ) {
-  return await directus.request(
+  return await publicDirectus.request(
     createUser({
       email,
       password,
@@ -115,4 +124,39 @@ export async function userRegister(
       last_name: lastName,
     })
   );
+}
+
+// Refresh Token Helper
+export async function tokenRefresh(request: Request, refreshToken: string) {
+  try {
+    // Call Directus refresh
+    const { access_token, refresh_token } = await directus.request(
+      refresh({ refresh_token: refreshToken, mode: "json" })
+    );
+
+    // Update session with new tokens
+    const session = await getSession(request);
+    session.set("access_token", access_token);
+    session.set("refresh_token", refresh_token);
+
+    return {
+      access_token,
+      refresh_token,
+      headers: {
+        "Set-Cookie": await commitSession(session),
+      },
+    };
+  } catch (err) {
+    // If refresh fails, clear session
+    const session = await getSession(request);
+    session.set("access_token", null);
+    session.set("refresh_token", null);
+
+    return {
+      error: "Refresh failed",
+      headers: {
+        "Set-Cookie": await commitSession(session),
+      },
+    };
+  }
 }

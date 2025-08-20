@@ -16,20 +16,32 @@ import { getUserToken } from "../lib/session.server";
 import { getUserDetails } from "~/lib/directus.server";
 
 export async function loader({ request }: { request: Request }) {
-  const token = await getUserToken(request);
+  try {
+    console.log("Inside of try block of _layout");
+    const token = await getUserToken(request);
 
-  if (!token) {
+    if (!token) {
+      console.log("Inside of if block of _layout");
+      return { isAuthenticated: false, user: null };
+    } else {
+      console.log("Inside of else block of _layout");
+      const user = await getUserDetails(token);
+      return {
+        isAuthenticated: true,
+        user: {
+          email: user.email,
+          firstName: user.first_name,
+          lastName: user.last_name,
+        },
+      };
+    }
+  } catch (error: any) {
+    console.log("Inside of catch block of _layout");
+    console.log("Error occurred in HomePage(_layout.tsx): ", error);
+    if(error.message === "Token expired.") {
+      
+    }
     return { isAuthenticated: false, user: null };
-  } else {
-    const user = await getUserDetails(token);
-    return {
-      isAuthenticated: true,
-      user: {
-        email: user.email,
-        firstName: user.first_name,
-        lastName: user.last_name,
-      },
-    };
   }
 }
 
@@ -41,7 +53,7 @@ export default function Layout({
   const [opened, { toggle }] = useDisclosure();
   const userInitials =
     loaderData.user?.firstName?.[0]?.toUpperCase() +
-      loaderData.user?.lastName?.[0]?.toUpperCase() || "";
+    loaderData.user?.lastName?.[0]?.toUpperCase() || "";
 
   return (
     <AppShell
@@ -70,7 +82,7 @@ export default function Layout({
             />
 
             <Group gap="xl" visibleFrom="sm">
-              {loaderData.user ? (
+              {loaderData.user !== null ? (
                 <Tooltip
                   label={`${loaderData.user.firstName} ${loaderData.user.lastName} [
                   ${loaderData.user.email}]`}
@@ -114,8 +126,12 @@ export default function Layout({
       <AppShell.Navbar hiddenFrom="sm" p="xl">
         <Stack gap="lg">
           {loaderData.user ? (
-            <Box bg="gray"  p="4px 12px" style={{borderRadius:"4px", width:"fit-content"}}>
-              <Text c="teal" >
+            <Box
+              bg="gray"
+              p="4px 12px"
+              style={{ borderRadius: "4px", width: "fit-content" }}
+            >
+              <Text c="teal">
                 {loaderData.user.firstName} {loaderData.user.lastName} [
                 {loaderData.user.email}]
               </Text>

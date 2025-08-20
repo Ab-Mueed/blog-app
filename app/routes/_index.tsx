@@ -26,7 +26,7 @@ export default function HomePage({ loaderData }: Route.ComponentProps) {
 
       <SimpleGrid cols={{ base: 1, md: 2 }} spacing="lg">
         {loaderData.allPosts.map((post: any) => (
-          <Card key={post.id}>
+          <Card key={post.id} withBorder>
             <Group>
               <Text fw={500}>{post.title}</Text>
             </Group>
