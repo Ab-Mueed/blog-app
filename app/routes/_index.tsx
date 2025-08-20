@@ -5,7 +5,6 @@ import {
   Title,
   SimpleGrid,
   Group,
-  Button,
   Anchor,
 } from "@mantine/core";
 import type { Route } from "./+types/_index";
