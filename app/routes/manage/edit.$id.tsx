@@ -1,5 +1,9 @@
 import { getSession } from "../../lib/session.server";
-import { getPostbyId, updatePost } from "../../lib/directus.server";
+import {
+  getPostbyId,
+  updatePost,
+  getUserDetails,
+} from "../../lib/directus.server";
 import Editor from "../../components/Editor";
 import { redirect, href } from "react-router";
 
@@ -24,8 +28,16 @@ export async function loader({
   }
 
   try {
+    const userDetail = await getUserDetails(accessToken);
     const post = await getPostbyId(id);
-    console.log("post: ", post);
+
+    if (post.userId !== userDetail.id) {
+      throw new Response("Forbidden", { status: 403 });
+    }
+
+    // if(post.userId)
+
+    // console.log("post: ", post);
     return { post };
   } catch (error) {
     const post = await getPostbyId(id);
@@ -54,7 +66,9 @@ export async function action({
   const accessToken = session.get("access_token");
 
   await updatePost(params.id, { title, description }, accessToken);
-  return new Response(null, { status: 302, headers: { Location: "/" } });
+
+  return redirect(href("/"))
+  // return new Response(null, { status: 302, headers: { Location: "/" } });
 }
 
 export default function EditPostPage({ loaderData }: any) {

@@ -8,9 +8,9 @@ import {
   Button,
   SimpleGrid,
 } from "@mantine/core";
-import { Link, href, redirect } from "react-router";
+import { Form, Link, href, redirect } from "react-router";
 import { getSession } from "../../lib/session.server";
-import { getMyPosts } from "../../lib/directus.server";
+import { deletePost, getMyPosts } from "../../lib/directus.server";
 
 export async function loader({ request }: { request: Request }) {
   const session = await getSession(request);
@@ -22,6 +22,24 @@ export async function loader({ request }: { request: Request }) {
 
   const posts = await getMyPosts(accessToken);
   return { posts };
+}
+
+export async function action({ request }: { request: Request }) {
+  const session = await getSession(request);
+  const accessToken = session.get("access_token");
+
+  if (!accessToken) {
+    return redirect("/auth/login");
+  }
+  const formData = await request.formData();
+  const postId = formData.get("postId") as string;
+
+  try {
+    await deletePost(postId, accessToken);
+    return redirect("/manage");
+  } catch (err) {
+    return new Response(null, { status: 500 });
+  }
 }
 
 export default function ManagePost({ loaderData }: any) {
@@ -67,6 +85,12 @@ export default function ManagePost({ loaderData }: any) {
                 >
                   View
                 </Anchor>
+                <Form method="post">
+                  <input type="hidden" name="postId" value={post.id} />
+                  <Button type="submit" color="red" size="xs" variant="light">
+                    Delete
+                  </Button>
+                </Form>
               </Group>
             </Card>
           ))}

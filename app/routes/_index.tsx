@@ -18,6 +18,11 @@ export async function loader() {
 }
 
 export default function HomePage({ loaderData }: Route.ComponentProps) {
+
+  function stripHtml(html: string) {
+    const doc = new DOMParser().parseFromString(html, "text/html");
+    return doc.body.textContent || ""
+  }
   return (
     <Container fluid>
       <Title order={2} mb="lg">
@@ -26,13 +31,13 @@ export default function HomePage({ loaderData }: Route.ComponentProps) {
 
       <SimpleGrid cols={{ base: 1, md: 2 }} spacing="lg">
         {loaderData.allPosts.map((post: any) => (
-          <Card key={post.id}>
+          <Card key={post.id} withBorder>
             <Group>
               <Text fw={500}>{post.title}</Text>
             </Group>
 
             <Text size="sm" c="dimmed" mb="md" lineClamp={1}>
-              {post.description}
+              {stripHtml(post.description)}
             </Text>
 
             <Anchor
