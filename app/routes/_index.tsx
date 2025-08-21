@@ -18,10 +18,8 @@ export async function loader() {
 }
 
 export default function HomePage({ loaderData }: Route.ComponentProps) {
-
   function stripHtml(html: string) {
-    const doc = new DOMParser().parseFromString(html, "text/html");
-    return doc.body.textContent || ""
+    return html.replace(/<[^>]*>/g, "");
   }
   return (
     <Container fluid>
