@@ -66,7 +66,9 @@ export async function action({
   const accessToken = session.get("access_token");
 
   await updatePost(params.id, { title, description }, accessToken);
-  return new Response(null, { status: 302, headers: { Location: "/" } });
+
+  return redirect(href("/"))
+  // return new Response(null, { status: 302, headers: { Location: "/" } });
 }
 
 export default function EditPostPage({ loaderData }: any) {

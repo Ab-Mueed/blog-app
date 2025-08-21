@@ -1,7 +1,7 @@
 import { createPost } from "../../lib/directus.server";
 import { getSession } from "../../lib/session.server";
 import Editor from "../../components/Editor";
-import { redirect, href } from "react-router";
+import { redirect, href} from "react-router";
 
 export async function loader({ request }: { request: Request }) {
   const session = await getSession(request);
@@ -32,7 +32,9 @@ export async function action({ request }: { request: Request }) {
 
   await createPost({ title, description, accessToken });
 
-  return new Response(null, { status: 302, headers: { Location: "/" } });
+  return redirect("/?success=created");
+
+  // return new Response(null, { status: 302, headers: { Location: "/" } });
 }
 
 export default function CreatePostPage() {
