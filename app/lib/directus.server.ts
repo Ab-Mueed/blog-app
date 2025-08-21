@@ -10,6 +10,7 @@ import {
   logout,
   readMe,
   refresh,
+  deleteItem,
 } from "@directus/sdk";
 
 import { getSession, commitSession, destroySession } from "./session.server";
@@ -86,6 +87,12 @@ export async function getMyPosts(accessToken: string) {
       fields: ["id", "title", "description", "date_created"],
     })
   );
+}
+
+// Delete Posts
+export async function deletePost(id: string, accessToken: string) {
+  directus.setToken(accessToken);
+  return await directus.request(deleteItem("posts", id));
 }
 
 // Help user to login
