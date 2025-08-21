@@ -12,8 +12,9 @@ import {
 } from "@mantine/core";
 import { useDisclosure } from "@mantine/hooks";
 import { Link, Outlet, Form } from "react-router";
-import { getUserToken } from "../lib/session.server";
-import { getUserDetails } from "~/lib/directus.server";
+import { getUserToken, getSession } from "../lib/session.server";
+import { getUserDetails, tokenRefresh } from "~/lib/directus.server";
+import { data } from "react-router";
 
 export async function loader({ request }: { request: Request }) {
   try {
@@ -38,9 +39,45 @@ export async function loader({ request }: { request: Request }) {
   } catch (error: any) {
     console.log("Inside of catch block of _layout");
     console.log("Error occurred in HomePage(_layout.tsx): ", error);
-    if(error.message === "Token expired.") {
-      
+
+    if (error.message === "Token expired.") {
+      // Get refresh token from session
+      console.log("Inside of Error.Message", error.message);
+      const session = await getSession(request);
+      console.log("session in _layout.tsx", session)
+      const refreshToken = session.get("refresh_token");
+      console.log("Refresh Token in _layout.tsx: ", refreshToken);
+
+      if (refreshToken) {
+        try {
+          // Attempt to refresh the token
+          const refreshResult = await tokenRefresh(request, refreshToken);
+          console.log("refreshResult", refreshResult);
+
+          if (refreshResult.access_token) {
+            // Token refresh successful, get user details with new token
+            const user = await getUserDetails(refreshResult.access_token);
+
+            return data(
+              {
+                isAuthenticated: true,
+                user: {
+                  email: user.email,
+                  firstName: user.first_name,
+                  lastName: user.last_name,
+                },
+              },
+              {
+                headers: refreshResult.headers,
+              }
+            );
+          }
+        } catch (refreshError) {
+          console.log("Token refresh failed:", refreshError);
+        }
+      }
     }
+
     return { isAuthenticated: false, user: null };
   }
 }
