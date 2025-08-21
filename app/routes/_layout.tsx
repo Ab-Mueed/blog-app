@@ -9,7 +9,11 @@ import {
   Tooltip,
   Avatar,
   Box,
+  Button,
+  useMantineColorScheme,
+  ThemeIcon,
 } from "@mantine/core";
+import {IconSun, IconMoon} from "@tabler/icons-react"
 import { useDisclosure } from "@mantine/hooks";
 import { Link, Outlet, Form } from "react-router";
 import { getUserToken, getSession } from "../lib/session.server";
@@ -44,7 +48,7 @@ export async function loader({ request }: { request: Request }) {
       // Get refresh token from session
       console.log("Inside of Error.Message", error.message);
       const session = await getSession(request);
-      console.log("session in _layout.tsx", session)
+      console.log("session in _layout.tsx", session);
       const refreshToken = session.get("refresh_token");
       console.log("Refresh Token in _layout.tsx: ", refreshToken);
 
@@ -88,9 +92,10 @@ export default function Layout({
   loaderData: { isAuthenticated: boolean; user: any };
 }) {
   const [opened, { toggle }] = useDisclosure();
+  const { colorScheme, toggleColorScheme } = useMantineColorScheme();
   const userInitials =
     loaderData.user?.firstName?.[0]?.toUpperCase() +
-    loaderData.user?.lastName?.[0]?.toUpperCase() || "";
+      loaderData.user?.lastName?.[0]?.toUpperCase() || "";
 
   return (
     <AppShell
@@ -155,6 +160,11 @@ export default function Layout({
                   </Anchor>
                 </Form>
               )}
+
+                <ThemeIcon p={4} radius="xl" onClick={() => toggleColorScheme()}>
+                  {colorScheme === "dark"? <IconSun/> : <IconMoon/>}
+                  </ThemeIcon>
+
             </Group>
           </Group>
         </Container>
