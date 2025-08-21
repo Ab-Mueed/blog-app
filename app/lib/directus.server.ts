@@ -97,7 +97,7 @@ export async function userLogin(email: string, password: string) {
 export async function getUserDetails(accessToken: string) {
   directus.setToken(accessToken);
   return await directus.request(
-    readMe({ fields: ["email", "first_name", "last_name"] })
+    readMe({ fields: ["email", "first_name", "last_name", "id"] })
   );
 }
 
@@ -129,9 +129,18 @@ export async function userRegister(
 // Refresh Token Helper
 export async function tokenRefresh(request: Request, refreshToken: string) {
   try {
+    console.log("Inside of try block of tokenRefresh");
     // Call Directus refresh
+    directus.setToken(refreshToken);
     const { access_token, refresh_token } = await directus.request(
       refresh({ refresh_token: refreshToken, mode: "json" })
+    );
+
+    console.log(
+      "Inside of tokenRefresh, New access token: ",
+      access_token,
+      "New refresh Token: ",
+      refresh_token
     );
 
     // Update session with new tokens
@@ -153,7 +162,7 @@ export async function tokenRefresh(request: Request, refreshToken: string) {
     session.set("refresh_token", null);
 
     return {
-      error: "Refresh failed",
+      error: err,
       headers: {
         "Set-Cookie": await commitSession(session),
       },
