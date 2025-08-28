@@ -22,14 +22,15 @@ import { data } from "react-router";
 
 export async function loader({ request }: { request: Request }) {
   try {
-    console.log("Inside of try block of _layout");
+
     const token = await getUserToken(request);
+    console.log(token);
 
     if (!token) {
-      console.log("Inside of if block of _layout");
+
       return { isAuthenticated: false, user: null };
     } else {
-      console.log("Inside of else block of _layout");
+
       const user = await getUserDetails(token);
       return {
         isAuthenticated: true,
@@ -41,22 +42,21 @@ export async function loader({ request }: { request: Request }) {
       };
     }
   } catch (error: any) {
-    console.log("Inside of catch block of _layout");
-    console.log("Error occurred in HomePage(_layout.tsx): ", error);
 
     if (error.message === "Token expired.") {
       // Get refresh token from session
-      console.log("Inside of Error.Message", error.message);
+
       const session = await getSession(request);
-      console.log("session in _layout.tsx", session);
       const refreshToken = session.get("refresh_token");
-      console.log("Refresh Token in _layout.tsx: ", refreshToken);
+
 
       if (refreshToken) {
         try {
+
           // Attempt to refresh the token
+          console.log("57: Called from _layout.tsx loader: ","Refresh-Token: ", refreshToken)
           const refreshResult = await tokenRefresh(request, refreshToken);
-          console.log("refreshResult", refreshResult);
+
 
           if (refreshResult.access_token) {
             // Token refresh successful, get user details with new token
@@ -75,9 +75,18 @@ export async function loader({ request }: { request: Request }) {
                 headers: refreshResult.headers,
               }
             );
+          } else if (refreshResult.error) {
+            // Token refresh failed, return with session cleared
+
+            return data(
+              { isAuthenticated: false, user: null },
+              {
+                headers: refreshResult.headers,
+              }
+            );
           }
         } catch (refreshError) {
-          console.log("Token refresh failed:", refreshError);
+          console.log("Token refresh failed with exception:", refreshError);
         }
       }
     }
