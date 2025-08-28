@@ -10,6 +10,7 @@ import {
   logout,
   readMe,
   refresh,
+  login,
   deleteItem,
   withToken,
 } from "@directus/sdk";
@@ -102,7 +103,7 @@ export async function deletePost(id: string, accessToken: string) {
 
 // Help user to login
 export async function userLogin(email: string, password: string) {
-  return await directus.login({ email, password });
+  return await directus.request(login({ email, password }, { mode: "json" }));
 }
 
 // Get User Details
@@ -144,10 +145,14 @@ export async function userRegister(
 export async function tokenRefresh(request: Request, refreshToken: string) {
   try {
     // Don't set token before refresh - just make the refresh request directly
+    console.log("147: Refresh-Token: ", refreshToken);
+
     const { access_token, refresh_token } = await directus.request(
       refresh({ refresh_token: refreshToken, mode: "json" })
     );
 
+    console.log("New Access Token: ", access_token);
+    console.log("New Refresh Token: ", refresh_token);
     // Update session with new tokens
     const session = await getSession(request);
     session.set("access_token", access_token);
