@@ -24,7 +24,6 @@ export async function loader({ request }: { request: Request }) {
   try {
 
     const token = await getUserToken(request);
-    console.log(token);
 
     if (!token) {
 
