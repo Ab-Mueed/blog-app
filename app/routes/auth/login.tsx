@@ -30,6 +30,13 @@ export async function action({ request }: { request: Request }) {
 
   try {
     const { access_token, refresh_token } = await userLogin(email, password);
+    console.log(
+      "From Login action:  ",
+      "Access-Token: ",
+      access_token,
+      "Refresh-Token",
+      refresh_token
+    );
 
     const session = await getSession(request);
     session.set("access_token", access_token);
@@ -55,7 +62,9 @@ export default function LoginPage({ actionData }: any) {
   });
   return (
     <Container size={420} my={40}>
-      <Title ta="center" mb="md">Welcome Back</Title>
+      <Title ta="center" mb="md">
+        Welcome Back
+      </Title>
       <Paper>
         {actionData?.error && (
           <Alert color="red" mb="md">

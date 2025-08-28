@@ -11,6 +11,7 @@ import {
   readMe,
   refresh,
   deleteItem,
+  withToken,
 } from "@directus/sdk";
 
 import { getSession, commitSession, destroySession } from "./session.server";
@@ -18,7 +19,7 @@ import { getSession, commitSession, destroySession } from "./session.server";
 // Directus client for Protected Endpoints
 const directus = createDirectus("https://directus-blog-e17s.onrender.com")
   .with(rest())
-  .with(authentication("json"));
+  .with(authentication("json", { autoRefresh: false }));
 
 // Directus client for Public Endpoints
 const publicDirectus = createDirectus(
@@ -46,13 +47,14 @@ export async function createPost({
   description: string;
   accessToken: string;
 }) {
-  directus.setToken(accessToken);
-
   return await directus.request(
-    createItem("posts", {
-      title,
-      description,
-    })
+    withToken(
+      accessToken,
+      createItem("posts", {
+        title,
+        description,
+      })
+    )
   );
 }
 
@@ -64,21 +66,22 @@ export async function updatePost(
 ) {
   console.log("Inside of Update");
   console.log(id, data, accessToken);
-  directus.setToken(accessToken);
+  // directus.setToken(accessToken);
 
   return await directus.request(
-    updateItem("posts", id, {
-      title: data.title,
-      description: data.description,
-    })
+    withToken(
+      accessToken,
+      updateItem("posts", id, {
+        title: data.title,
+        description: data.description,
+      })
+    )
   );
 }
 
 // Get Posts for Specific User (Authenticated) / For Posts Management
 export async function getMyPosts(accessToken: string) {
-  directus.setToken(accessToken);
-
-  const me = await directus.request(readMe());
+  const me = await directus.request(withToken(accessToken, readMe()));
 
   return await directus.request(
     readItems("posts", {
@@ -91,8 +94,10 @@ export async function getMyPosts(accessToken: string) {
 
 // Delete Posts
 export async function deletePost(id: string, accessToken: string) {
-  directus.setToken(accessToken);
-  return await directus.request(deleteItem("posts", id));
+  // directus.setToken(accessToken);
+  return await directus.request(
+    withToken(accessToken, deleteItem("posts", id))
+  );
 }
 
 // Help user to login
@@ -102,15 +107,17 @@ export async function userLogin(email: string, password: string) {
 
 // Get User Details
 export async function getUserDetails(accessToken: string) {
-  directus.setToken(accessToken);
+  // directus.setToken(accessToken);
   return await directus.request(
-    readMe({ fields: ["email", "first_name", "last_name", "id"] })
+    withToken(
+      accessToken,
+      readMe({ fields: ["email", "first_name", "last_name", "id"] })
+    )
   );
 }
 
 // Help user to logout
 export async function userLogout(refreshToken: string) {
-  console.log("Trying to logout: ", refreshToken);
   return await directus.request(
     logout({ refresh_token: refreshToken, mode: "json" })
   );
@@ -136,18 +143,9 @@ export async function userRegister(
 // Refresh Token Helper
 export async function tokenRefresh(request: Request, refreshToken: string) {
   try {
-    console.log("Inside of try block of tokenRefresh");
-    // Call Directus refresh
-    directus.setToken(refreshToken);
+    // Don't set token before refresh - just make the refresh request directly
     const { access_token, refresh_token } = await directus.request(
       refresh({ refresh_token: refreshToken, mode: "json" })
-    );
-
-    console.log(
-      "Inside of tokenRefresh, New access token: ",
-      access_token,
-      "New refresh Token: ",
-      refresh_token
     );
 
     // Update session with new tokens
@@ -163,16 +161,13 @@ export async function tokenRefresh(request: Request, refreshToken: string) {
       },
     };
   } catch (err) {
-    // If refresh fails, clear session
+    console.log("Token refresh failed, clearing session:", err);
+    // If refresh fails, destroy the session completely
     const session = await getSession(request);
-    session.set("access_token", null);
-    session.set("refresh_token", null);
 
     return {
       error: err,
-      headers: {
-        "Set-Cookie": await commitSession(session),
-      },
+      headers: { "Set-Cookie": await commitSession(session) },
     };
   }
 }
